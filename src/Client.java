@@ -9,6 +9,11 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.Scanner;
 
 public class Client extends Application {
 
@@ -22,6 +27,7 @@ public class Client extends Application {
         paneForLabelAndTfEnterAServer.setPadding(new Insets(5, 5, 5, 5));
         paneForLabelAndTfEnterAServer.setLeft(new Label("Enter a server:  "));
         tfServer.setAlignment(Pos.BOTTOM_RIGHT);
+        tfServer.setText("www.oracle.com"); // Default server name
         paneForLabelAndTfEnterAServer.setCenter(tfServer);
 
         // Panel p to hold the label enter a server and text field
@@ -29,6 +35,7 @@ public class Client extends Application {
         paneForLabelAndTfEnterAPort.setPadding(new Insets(5, 5, 5, 5));
         paneForLabelAndTfEnterAPort.setLeft(new Label("Enter a port:     "));
         tfPort.setAlignment(Pos.BOTTOM_RIGHT);
+        tfPort.setText("80"); // Default port number
         paneForLabelAndTfEnterAPort.setCenter(tfPort);
 
         // Panel fro the button submit
@@ -68,7 +75,9 @@ public class Client extends Application {
             try (Socket socket = new Socket(server, Integer.parseInt(port))) {
                 // Check the connection
                 if (socket.isConnected()) {
-                    findAllPages();
+                    System.out.println("Connection to server " + server + " is "
+                            + socket.isConnected());
+                    findAllPages(server);
                 }
                 else {
                     System.out.println("Can't connect to the server.");
@@ -79,7 +88,47 @@ public class Client extends Application {
         }
     }
 
-    private void findAllPages() {
+    private void findAllPages(String startingURL) {
+        LinkedList<String> listOfPendingURLs = new LinkedList<>();
+        HashSet<String> listOfTraversedURLs = new HashSet<>();
 
+        listOfPendingURLs.add(startingURL);
+        while (!listOfPendingURLs.isEmpty()) {
+            String url = listOfPendingURLs.pop(); // Remove and return the top element
+            if (!listOfTraversedURLs.contains(url)) {
+                listOfTraversedURLs.add(url);
+                System.out.println("Craw " + url);
+                getSubURLs(url).stream().filter(
+                        s -> !listOfTraversedURLs.contains(s)).forEach(listOfPendingURLs::push);
+            }
+        }
+    }
+
+    private ArrayList<String> getSubURLs(String urlString) {
+        ArrayList<String> list = new ArrayList<>(1000);
+
+        try {
+            URL url = new URL("https://" + urlString);
+            Scanner input = new Scanner(url.openStream());
+            int current = 0;
+            while (input.hasNext()) {
+                String line = input.nextLine();
+                current = line.indexOf("https://" + urlString, current);
+                while (current > 0) {
+                    int endIndex = line.indexOf("\"", current);
+                    if (endIndex > 0) { // Ensure that a correct URL is found
+                        list.add(line.substring(current, endIndex));
+                        current = line.indexOf("https://" + urlString, endIndex);
+                    }
+                    else
+                        current = -1;
+                }
+            }
+        }
+        catch (Exception ex) {
+            System.out.println("Error: " + ex.getMessage());
+        }
+
+        return list;
     }
 }
