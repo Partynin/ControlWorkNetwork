@@ -7,7 +7,9 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.URL;
 import java.util.ArrayList;
@@ -70,16 +72,14 @@ public class Client extends Application {
         String port = tfPort.getText();
         if (server.isEmpty() || port.isEmpty()) {
             System.out.println("Please enter the server name and port.");
-        }
-        else {
+        } else {
             try (Socket socket = new Socket(server, Integer.parseInt(port))) {
                 // Check the connection
                 if (socket.isConnected()) {
                     System.out.println("Connection to server " + server + " is "
                             + socket.isConnected());
                     findAllPages(server);
-                }
-                else {
+                } else {
                     System.out.println("Can't connect to the server.");
                 }
             } catch (IOException ex) {
@@ -92,41 +92,64 @@ public class Client extends Application {
         LinkedList<String> listOfPendingURLs = new LinkedList<>();
         HashSet<String> listOfTraversedURLs = new HashSet<>();
 
-        listOfPendingURLs.add(startingURL);
-        while (!listOfPendingURLs.isEmpty()) {
-            String url = listOfPendingURLs.pop(); // Remove and return the top element
+        listOfPendingURLs.add("https://" + startingURL);
+        System.out.println(getSizeOfURL("https://" + startingURL));
+        while (!listOfPendingURLs.isEmpty() && listOfTraversedURLs.size() <= 100) {
+            String url = listOfPendingURLs.pop();
             if (!listOfTraversedURLs.contains(url)) {
                 listOfTraversedURLs.add(url);
                 System.out.println("Craw " + url);
                 getSubURLs(url).stream().filter(
                         s -> !listOfTraversedURLs.contains(s)).forEach(listOfPendingURLs::push);
+
             }
+
         }
+    }
+
+    private long getSizeOfURL(String urlString) {
+        long len = 0;
+        try {
+            URL url = new URL(urlString);
+            BufferedReader in = new BufferedReader(
+                    new InputStreamReader(url.openStream()));
+            String inputLine;
+            StringBuilder inputText = new StringBuilder();
+            while ((inputLine = in.readLine()) != null) {
+                inputText.append(inputLine);
+            }
+            final byte[] utf8Bytes = inputText.toString().getBytes("UTF-8");
+            len = utf8Bytes.length;
+            in.close();
+        }
+        catch (IOException ex) {
+            System.out.println(ex.toString());
+        }
+
+        return len;
     }
 
     private ArrayList<String> getSubURLs(String urlString) {
         ArrayList<String> list = new ArrayList<>(1000);
 
         try {
-            URL url = new URL("https://" + urlString);
+            URL url = new URL(urlString);
             Scanner input = new Scanner(url.openStream());
             int current = 0;
             while (input.hasNext()) {
                 String line = input.nextLine();
-                current = line.indexOf("https://" + urlString, current);
+                current = line.indexOf("https://www.oracle.com", current);
                 while (current > 0) {
                     int endIndex = line.indexOf("\"", current);
                     if (endIndex > 0) { // Ensure that a correct URL is found
                         list.add(line.substring(current, endIndex));
-                        current = line.indexOf("https://" + urlString, endIndex);
-                    }
-                    else
+                        current = line.indexOf("https://www.oracle.com", endIndex);
+                    } else
                         current = -1;
                 }
             }
-        }
-        catch (Exception ex) {
-            System.out.println("Error: " + ex.getMessage());
+        } catch (Exception ex) {
+            System.out.println("Error: " + ex.toString());
         }
 
         return list;
