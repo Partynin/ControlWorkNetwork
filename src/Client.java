@@ -15,9 +15,13 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+/**
+ * The program for counting the number of pages and their size on the server.
+ * Server examples: rebeccaatwood.com, www.oracle.com
+ */
 
 public class Client extends Application {
 
@@ -45,15 +49,15 @@ public class Client extends Application {
         // Panel p to hold the label enter a server and text field
         BorderPane paneForLabelAndTfEnterAServer = new BorderPane();
         paneForLabelAndTfEnterAServer.setPadding(new Insets(5, 5, 5, 5));
-        paneForLabelAndTfEnterAServer.setLeft(new Label("Enter a server:  "));
+        paneForLabelAndTfEnterAServer.setLeft(new Label("Enter a server:      "));
         tfServer.setAlignment(Pos.BOTTOM_RIGHT);
-        tfServer.setText("www.oracle.com"); // Default server name
+        tfServer.setText("rebeccaatwood.com"); // Default server name
         paneForLabelAndTfEnterAServer.setCenter(tfServer);
 
         // Panel p to hold the label enter a server and text field
         BorderPane paneForLabelAndTfEnterAPort = new BorderPane();
         paneForLabelAndTfEnterAPort.setPadding(new Insets(5, 5, 5, 5));
-        paneForLabelAndTfEnterAPort.setLeft(new Label("Enter a port:     "));
+        paneForLabelAndTfEnterAPort.setLeft(new Label("Enter a port:         "));
         tfPort.setAlignment(Pos.BOTTOM_RIGHT);
         tfPort.setText("80"); // Default port number
         paneForLabelAndTfEnterAPort.setCenter(tfPort);
@@ -113,7 +117,7 @@ public class Client extends Application {
 
         listOfPendingURLs.add(protocol + startingURL);
         System.out.println(getSizeOfURL(protocol + startingURL));
-        while (!listOfPendingURLs.isEmpty() && listOfTraversedURLs.size() <= 100) {
+        while (!listOfPendingURLs.isEmpty() && listOfTraversedURLs.size() <= 200) {
             String url = listOfPendingURLs.pop();
             if (!listOfTraversedURLs.contains(url)) {
                 listOfTraversedURLs.add(url);
@@ -149,15 +153,15 @@ public class Client extends Application {
 
     private ArrayList<String> getSubURLs(String urlString) {
         //ArrayList<String> list = new ArrayList<>(1000);
-        System.out.println("getSubURLs method work");
+        //System.out.println("getSubURLs method work");
         list.clear();
 
         try {
             URL url = new URL(urlString);
-            Scanner input = new Scanner(url.openStream());
+            BufferedReader br = new BufferedReader(new InputStreamReader(url.openStream()));
+            String line = "";
             int current = 0;
-            while (input.hasNext()) {
-                String line = input.nextLine();
+            while ((line = br.readLine()) != null) {
                 current = line.indexOf(protocol + server, current);
                 while (current > 0) {
                     int endIndex = line.indexOf("\"", current);
